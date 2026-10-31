@@ -1,0 +1,45 @@
+name: Update Profile README & SVGs
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Chạy định kỳ mỗi 6 tiếng
+  workflow_dispatch:      # Cho phép bấm nút chạy thủ công bất cứ lúc nào
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  update-svg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate Custom Stats SVGs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: python generate_svg.py
+
+      - name: Generate Contribution Snake SVG (Dark Mode)
+        uses: Platane/snk/svg-only@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            assets/snake.svg?palette=github-dark
+
+      - name: Commit and Push updated SVGs
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/*.svg
+          git diff --staged --quiet || git commit -m "chore: regenerate profile SVGs [skip ci]"
+          git push
