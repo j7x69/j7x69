@@ -1,18 +1,99 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="850" height="105" viewBox="0 0 850 105" fill="none">
-  <rect width="848" height="103" x="1" y="1" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
-  <rect width="4" height="103" x="1" y="1" rx="2" fill="#00e5ff"/>
-  
-  <text x="28" y="35" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11" letter-spacing="1">FEATURED REPOSITORY</text>
-  <text x="28" y="62" fill="#f0f6fc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="700">PreservesPitchYT</text>
-  <text x="28" y="86" fill="#8b949e" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13">Chrome extension that unlocks custom audio pitch shifting on YouTube HTML5 ...</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="850" height="115" viewBox="0 0 850 115" fill="none">
+  <defs>
+    <linearGradient id="featBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#140305"/>
+      <stop offset="50%" stop-color="#1f0508"/>
+      <stop offset="100%" stop-color="#2a070c"/>
+    </linearGradient>
 
-  <!-- Số liệu bên phải -->
-  <text x="610" y="55" fill="#e3b341" font-family="-apple-system, sans-serif" font-size="18" font-weight="700" text-anchor="middle">1</text>
-  <text x="610" y="75" fill="#8b949e" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">STARS</text>
+    <linearGradient id="featLaser" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffdd00"/>
+      <stop offset="50%" stop-color="#da251d"/>
+      <stop offset="100%" stop-color="#ffdd00"/>
+    </linearGradient>
+  </defs>
 
-  <text x="700" y="55" fill="#58a6ff" font-family="-apple-system, sans-serif" font-size="18" font-weight="700" text-anchor="middle">0</text>
-  <text x="700" y="75" fill="#8b949e" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">FORKS</text>
+  <style>
+    .feat-border {
+      stroke-dasharray: 100 1820;
+      animation: featTravel 8s linear infinite;
+    }
+    @keyframes featTravel {
+      from { stroke-dashoffset: 1920; }
+      to { stroke-dashoffset: 0; }
+    }
+    .stat-box {
+      fill: #190407;
+      stroke: #420f14;
+      stroke-width: 1;
+    }
+    .corner-mark {
+      stroke: #ffdd00;
+      stroke-width: 1.5;
+      opacity: 0.7;
+    }
+  </style>
 
-  <text x="790" y="55" fill="#3fb950" font-family="-apple-system, sans-serif" font-size="18" font-weight="700" text-anchor="middle">0</text>
-  <text x="790" y="75" fill="#8b949e" font-family="ui-monospace, monospace" font-size="10" text-anchor="middle">DOWNLOADS</text>
+  <!-- Card Background -->
+  <rect width="848" height="113" x="1" y="1" rx="12" fill="url(#featBg)" stroke="#3d0e13" stroke-width="1.5"/>
+
+  <!-- Tactical Corners -->
+  <path d="M 8 16 L 8 8 L 16 8" class="corner-mark"/>
+  <path d="M 840 16 L 840 8 L 832 8" class="corner-mark"/>
+  <path d="M 8 98 L 8 106 L 16 106" class="corner-mark"/>
+  <path d="M 840 98 L 840 106 L 832 106" class="corner-mark"/>
+
+  <!-- Left Accent Dual Stripe: Flag Red + Imperial Gold -->
+  <rect x="1" y="1" width="4" height="113" rx="2" fill="#da251d"/>
+  <rect x="5" y="1" width="2.5" height="113" rx="1" fill="#ffdd00"/>
+
+  <!-- Animated Laser Ray -->
+  <rect width="848" height="113" x="1" y="1" rx="12" fill="none" stroke="url(#featLaser)" stroke-width="1.8" class="feat-border"/>
+
+  <!-- Header Badge -->
+  <g>
+    <rect x="30" y="16" width="220" height="18" rx="3" fill="#200609" stroke="#7a1c24" stroke-width="1"/>
+    <circle cx="40" cy="25" r="2.5" fill="#da251d"/>
+    <text x="49" y="28.5" fill="#ffdd00" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="9.5" font-weight="700" letter-spacing="1.2">
+      [ 🇻🇳 FEATURED_SYSTEM // CORE_BUILD ]
+    </text>
+  </g>
+
+  <!-- Repo Title -->
+  <text x="30" y="58" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="700">
+    PreservesPitchYT
+  </text>
+
+  <!-- Description -->
+  <text x="30" y="85" fill="#c49b9e" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="400">
+    Chrome extension unlocking custom audio pitch shifting on YouTube HTML5...
+  </text>
+
+  <!-- Right Side Stat Capsules -->
+  <!-- Capsule 1: Stars -->
+  <g transform="translate(595, 26)">
+    <rect width="72" height="62" rx="8" class="stat-box"/>
+    <rect width="72" height="2" rx="1" fill="#ffdd00"/>
+    <text x="36" y="22" fill="#ffdd00" font-size="12" font-family="sans-serif" text-anchor="middle">★</text>
+    <text x="36" y="42" fill="#ffdd00" font-family="-apple-system, sans-serif" font-size="17" font-weight="700" text-anchor="middle">1</text>
+    <text x="36" y="55" fill="#c49b9e" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" text-anchor="middle">STARS</text>
+  </g>
+
+  <!-- Capsule 2: Forks -->
+  <g transform="translate(675, 26)">
+    <rect width="72" height="62" rx="8" class="stat-box"/>
+    <rect width="72" height="2" rx="1" fill="#ffaa00"/>
+    <text x="36" y="22" fill="#ffaa00" font-size="12" font-family="sans-serif" text-anchor="middle">⑂</text>
+    <text x="36" y="42" fill="#ffaa00" font-family="-apple-system, sans-serif" font-size="17" font-weight="700" text-anchor="middle">0</text>
+    <text x="36" y="55" fill="#c49b9e" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" text-anchor="middle">FORKS</text>
+  </g>
+
+  <!-- Capsule 3: Downloads -->
+  <g transform="translate(755, 26)">
+    <rect width="72" height="62" rx="8" class="stat-box"/>
+    <rect width="72" height="2" rx="1" fill="#4ade80"/>
+    <text x="36" y="22" fill="#4ade80" font-size="12" font-family="sans-serif" text-anchor="middle">↓</text>
+    <text x="36" y="42" fill="#4ade80" font-family="-apple-system, sans-serif" font-size="17" font-weight="700" text-anchor="middle">0</text>
+    <text x="36" y="55" fill="#c49b9e" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" text-anchor="middle">RELEASES</text>
+  </g>
 </svg>

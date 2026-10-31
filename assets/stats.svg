@@ -1,32 +1,124 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="850" height="110" viewBox="0 0 850 110" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="850" height="115" viewBox="0 0 850 115" fill="none">
+  <defs>
+    <!-- Card Gradient -->
+    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#140305"/>
+      <stop offset="50%" stop-color="#1d0508"/>
+      <stop offset="100%" stop-color="#26070b"/>
+    </linearGradient>
+
+    <!-- Glowing Accent Beams -->
+    <linearGradient id="goldBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#da251d"/>
+      <stop offset="50%" stop-color="#ffdd00"/>
+      <stop offset="100%" stop-color="#da251d"/>
+    </linearGradient>
+
+    <linearGradient id="amberBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#da251d"/>
+      <stop offset="50%" stop-color="#ffaa00"/>
+      <stop offset="100%" stop-color="#da251d"/>
+    </linearGradient>
+
+    <linearGradient id="greenBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#da251d"/>
+      <stop offset="50%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#da251d"/>
+    </linearGradient>
+
+    <linearGradient id="redBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffdd00"/>
+      <stop offset="50%" stop-color="#da251d"/>
+      <stop offset="100%" stop-color="#ffdd00"/>
+    </linearGradient>
+  </defs>
+
   <style>
-    .card { fill: #0d1117; stroke: #30363d; stroke-width: 1.5; }
-    .num { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 26px; font-weight: 700; text-anchor: middle; }
-    .lbl { fill: #8b949e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-anchor: middle; }
-    .ico { font-family: sans-serif; font-size: 14px; text-anchor: middle; }
+    .stat-card {
+      fill: url(#cardBg);
+      stroke: #3d0e13;
+      stroke-width: 1.5;
+    }
+    .accent-beam {
+      animation: beamPulse 3s ease-in-out infinite;
+    }
+    @keyframes beamPulse {
+      0%, 100% { opacity: 0.75; }
+      50% { opacity: 1; filter: drop-shadow(0 0 4px #ffdd00); }
+    }
+    .stat-num {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      text-anchor: middle;
+    }
+    .stat-lbl {
+      fill: #c49b9e;
+      font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-anchor: middle;
+    }
+    .stat-tag {
+      fill: #80222b;
+      font-family: 'JetBrains Mono', Menlo, monospace;
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+    }
+    .bracket {
+      stroke: #ffdd00;
+      stroke-width: 1.2;
+      opacity: 0.65;
+    }
   </style>
 
-  <!-- Card 1: Stars -->
-  <rect x="1" y="5" width="200" height="100" rx="10" class="card"/>
-  <text x="101" y="30" fill="#e3b341" class="ico">★</text>
-  <text x="101" y="64" fill="#e3b341" class="num">4</text>
-  <text x="101" y="88" class="lbl">TOTAL STARS</text>
+  <!-- Card 1: TOTAL STARS -->
+  <g transform="translate(1, 5)">
+    <rect width="200" height="104" rx="10" class="stat-card"/>
+    <rect width="200" height="3" rx="1.5" fill="url(#goldBeam)" class="accent-beam"/>
+    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
+    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
+    <text x="14" y="24" class="stat-tag">// 01_STAR</text>
+    <text x="101" y="44" fill="#ffdd00" font-size="16" font-family="sans-serif" text-anchor="middle">★</text>
+    <text x="101" y="73" fill="#ffdd00" class="stat-num">4</text>
+    <text x="101" y="93" class="stat-lbl">TOTAL STARS</text>
+  </g>
 
-  <!-- Card 2: Forks -->
-  <rect x="217" y="5" width="200" height="100" rx="10" class="card"/>
-  <text x="317" y="30" fill="#58a6ff" class="ico">⑂</text>
-  <text x="317" y="64" fill="#58a6ff" class="num">0</text>
-  <text x="317" y="88" class="lbl">FORKS</text>
+  <!-- Card 2: FORKS -->
+  <g transform="translate(217, 5)">
+    <rect width="200" height="104" rx="10" class="stat-card"/>
+    <rect width="200" height="3" rx="1.5" fill="url(#amberBeam)" class="accent-beam"/>
+    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
+    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
+    <text x="14" y="24" class="stat-tag">// 02_FORK</text>
+    <text x="101" y="44" fill="#ffaa00" font-size="16" font-family="sans-serif" text-anchor="middle">⑂</text>
+    <text x="101" y="73" fill="#ffaa00" class="stat-num">0</text>
+    <text x="101" y="93" class="stat-lbl">TOTAL FORKS</text>
+  </g>
 
-  <!-- Card 3: Downloads -->
-  <rect x="433" y="5" width="200" height="100" rx="10" class="card"/>
-  <text x="533" y="30" fill="#3fb950" class="ico">↓</text>
-  <text x="533" y="64" fill="#3fb950" class="num">7</text>
-  <text x="533" y="88" class="lbl">DOWNLOADS</text>
+  <!-- Card 3: DOWNLOADS -->
+  <g transform="translate(433, 5)">
+    <rect width="200" height="104" rx="10" class="stat-card"/>
+    <rect width="200" height="3" rx="1.5" fill="url(#greenBeam)" class="accent-beam"/>
+    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
+    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
+    <text x="14" y="24" class="stat-tag">// 03_LOAD</text>
+    <text x="101" y="44" fill="#4ade80" font-size="16" font-family="sans-serif" text-anchor="middle">↓</text>
+    <text x="101" y="73" fill="#4ade80" class="stat-num">7</text>
+    <text x="101" y="93" class="stat-lbl">RELEASES DL</text>
+  </g>
 
-  <!-- Card 4: Public Repos -->
-  <rect x="649" y="5" width="200" height="100" rx="10" class="card"/>
-  <text x="749" y="30" fill="#a371f7" class="ico">▣</text>
-  <text x="749" y="64" fill="#a371f7" class="num">4</text>
-  <text x="749" y="88" class="lbl">PUBLIC REPOS</text>
+  <!-- Card 4: PUBLIC REPOS -->
+  <g transform="translate(649, 5)">
+    <rect width="200" height="104" rx="10" class="stat-card"/>
+    <rect width="200" height="3" rx="1.5" fill="url(#redBeam)" class="accent-beam"/>
+    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
+    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
+    <text x="14" y="24" class="stat-tag">// 04_REPO</text>
+    <text x="101" y="44" fill="#ff4d4d" font-size="16" font-family="sans-serif" text-anchor="middle">▣</text>
+    <text x="101" y="73" fill="#ff4d4d" class="stat-num">4</text>
+    <text x="101" y="93" class="stat-lbl">PUBLIC REPOS</text>
+  </g>
 </svg>
