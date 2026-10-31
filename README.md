@@ -24,7 +24,7 @@
 </div>
 
 <p align="left">
-  Lập trình viên thực chiến đến từ <b>Việt Nam 🇻🇳</b>. Tôi phát triển các công cụ tự động hóa, pipeline xử lý đa phương tiện (media engineering) và desktop utilities tối ưu hiệu năng. Triết lý xây dựng sản phẩm: <b>zero-bloat, thực dụng, giải quyết triệt để vấn đề kỹ thuật</b> — từ can thiệp pitch âm thanh HTML5 trên trình duyệt, vượt qua thuật toán nén video nền tảng đến các ứng dụng điều khiển media desktop native C#.
+  vibe coder đến từ <b>Việt Nam 🇻🇳</b>. Tôi phát triển các công cụ tự động hóa, pipeline xử lý đa phương tiện (media engineering) và desktop utilities tối ưu hiệu năng. Triết lý xây dựng sản phẩm: <b>zero-bloat, thực dụng, giải quyết triệt để vấn đề kỹ thuật</b> — từ can thiệp pitch âm thanh HTML5 trên trình duyệt, vượt qua thuật toán nén video nền tảng đến các ứng dụng điều khiển media desktop native C#.
 </p>
 
 ## 🇻🇳 Featured Weapon
@@ -64,5 +64,5 @@ Các repository project hiện tại:
 <div align="center">
   <img src="./assets/snake.svg" width="100%" alt="Contribution Graph" />
   <br/>
-  <sub><i>🇻🇳 Built with pride by Jax. Metrics được tự động đồng bộ từ GitHub API qua GitHub Actions mỗi 6 tiếng.</i></sub>
+  <sub><i>🇻🇳 Metrics được tự động đồng bộ từ GitHub API qua GitHub Actions mỗi 6 tiếng.</i></sub>
 </div>
