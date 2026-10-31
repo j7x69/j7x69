@@ -41,7 +41,7 @@
 
 ## 🛠️ Battlefield Tools & Repositories
 
-Các repository tinh gọn, tập trung cao độ vào tự động hóa, bypass nén media và điều khiển playback cục bộ:
+Các repository project hiện tại:
 
 | Repository | Đặc điểm kỹ thuật & Giải pháp | Stars |
 | :--- | :--- | :---: |
