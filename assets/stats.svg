@@ -106,7 +106,7 @@
     <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
     <text x="14" y="24" class="stat-tag">// 03_LOAD</text>
     <text x="101" y="44" fill="#4ade80" font-size="16" font-family="sans-serif" text-anchor="middle">↓</text>
-    <text x="101" y="73" fill="#4ade80" class="stat-num">7</text>
+    <text x="101" y="73" fill="#4ade80" class="stat-num">9</text>
     <text x="101" y="93" class="stat-lbl">RELEASES DL</text>
   </g>
 
