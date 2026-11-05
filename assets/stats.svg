@@ -118,7 +118,7 @@
     <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
     <text x="14" y="24" class="stat-tag">// 04_REPO</text>
     <text x="101" y="44" fill="#ff4d4d" font-size="16" font-family="sans-serif" text-anchor="middle">▣</text>
-    <text x="101" y="73" fill="#ff4d4d" class="stat-num">4</text>
+    <text x="101" y="73" fill="#ff4d4d" class="stat-num">5</text>
     <text x="101" y="93" class="stat-lbl">PUBLIC REPOS</text>
   </g>
 </svg>
