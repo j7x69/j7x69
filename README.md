@@ -24,7 +24,7 @@
 </div>
 
 <p align="left">
-  vibe coder đến từ <b>Việt Nam 🇻🇳</b>. Tôi phát triển các công cụ tự động hóa, pipeline xử lý đa phương tiện (media engineering) và desktop utilities tối ưu hiệu năng. Triết lý xây dựng sản phẩm: <b>zero-bloat, thực dụng, giải quyết triệt để vấn đề kỹ thuật</b> — từ can thiệp pitch âm thanh HTML5 trên trình duyệt, vượt qua thuật toán nén video nền tảng đến các ứng dụng điều khiển media desktop native C#.
+  # ello
 </p>
 
 ## 🇻🇳 Featured Weapon
