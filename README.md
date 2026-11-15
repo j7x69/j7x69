@@ -11,7 +11,7 @@
   <a href="https://chromewebstore.google.com/detail/preservespitch-yt/lfkbicpjobfdknmmaggfammfnieigpji?hl=vi&amp;utm_source=ext_sidebar">
     <img src="https://img.shields.io/badge/CHROME_STORE-PreservesPitch-FFDD00?style=for-the-badge&logo=googlechrome&logoColor=140305" alt="Chrome Web Store" />
   </a>
-  <a href="mailto:anhducthsd2@gmail.com">
+  <a href="mailto:jaxk5g999@gmail.com">
     <img src="https://img.shields.io/badge/CONTACT-JAX-DA251D?style=for-the-badge&logo=gmail&logoColor=white" alt="Gmail" />
   </a>
   <img src="https://img.shields.io/badge/LOCATION-VIETNAM%20🇻🇳-140305?style=for-the-badge&logoColor=white" alt="Vietnam" />
@@ -23,9 +23,6 @@
   <img src="./assets/stats.svg" width="100%" alt="GitHub Realtime Stats" />
 </div>
 
- <p align="center">
-      <img src="https://count.getloli.com/@recompress-bypass?theme=rule34&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" alt="recompress-bypass" />
-    </p>
 </p>
 
 ## 🇻🇳 Featured Weapon
