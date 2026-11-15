@@ -23,9 +23,9 @@
   <img src="./assets/stats.svg" width="100%" alt="GitHub Realtime Stats" />
 </div>
 
-<p align="left">
- <img width="868" height="283" alt="image" src="https://github.com/user-attachments/assets/79d2841b-b5ea-4c7e-838b-083cf3bbedfa" />
-
+ <p align="center">
+      <img src="https://count.getloli.com/@recompress-bypass?theme=rule34&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto" alt="recompress-bypass" />
+    </p>
 </p>
 
 ## 🇻🇳 Featured Weapon
