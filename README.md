@@ -24,7 +24,8 @@
 </div>
 
 <p align="left">
-  # ello
+ <img width="868" height="283" alt="image" src="https://github.com/user-attachments/assets/79d2841b-b5ea-4c7e-838b-083cf3bbedfa" />
+
 </p>
 
 ## 🇻🇳 Featured Weapon
