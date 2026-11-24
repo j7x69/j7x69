@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="850" height="96" viewBox="0 0 850 96" fill="none">
+  <rect x="0.5" y="0.5" width="849" height="95" rx="10" fill="#09090B" stroke="#27272A" stroke-width="1"/>
+
+  <line x1="283.5" y1="1" x2="283.5" y2="95" stroke="#1C1C21" stroke-width="1"/>
+  <line x1="566.5" y1="1" x2="566.5" y2="95" stroke="#1C1C21" stroke-width="1"/>
+
+  <!-- Domain 01 -->
+  <text x="22" y="27" fill="#71717A" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="9.5" font-weight="600" letter-spacing="1">01 // LANGUAGES</text>
+  <text x="22" y="53" fill="#FAFAFA" font-family="'SF Pro Display', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600">Kotlin · JavaScript · C#</text>
+  <text x="22" y="74" fill="#A1A1AA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="11">C++ · Python · PowerShell</text>
+
+  <!-- Domain 02 -->
+  <text x="305" y="27" fill="#71717A" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="9.5" font-weight="600" letter-spacing="1">02 // MEDIA &amp; RUNTIME</text>
+  <text x="305" y="53" fill="#FAFAFA" font-family="'SF Pro Display', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600">MP4 Binary Muxing · FFmpeg</text>
+  <text x="305" y="74" fill="#A1A1AA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="11">HTML5 Web Audio · Manifest V3</text>
+
+  <!-- Domain 03 -->
+  <text x="588" y="27" fill="#71717A" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="9.5" font-weight="600" letter-spacing="1">03 // PLATFORMS &amp; INFRA</text>
+  <text x="588" y="53" fill="#FAFAFA" font-family="'SF Pro Display', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600">Android (Jetpack Compose)</text>
+  <text x="588" y="74" fill="#A1A1AA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="11">Win32 Native · Linux · GitHub CI</text>
+</svg>

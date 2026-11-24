@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="241" height="30" viewBox="0 0 241 30" fill="none">
+  <rect x="0.5" y="0.5" width="240" height="29" rx="6" fill="#0D0D10" stroke="#27272A" stroke-width="1"/>
+  <circle cx="16" cy="15" r="5" stroke="#10B981" stroke-width="1.5"/>
+  <circle cx="16" cy="15" r="1.8" fill="#10B981"/>
+  <text x="28" y="19" fill="#A1A1AA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="10.5" font-weight="500">Chrome Store · <tspan fill="#FAFAFA" font-weight="600">PreservesPitchYT</tspan></text>
+</svg>

@@ -1,681 +1,552 @@
-import os
-import json
-import urllib.request
 import html
+import json
 import math
+import os
+import urllib.error
+import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(BASE_DIR)
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+CACHE_PATH = os.path.join(BASE_DIR, ".metrics_cache.json")
 
 USERNAME = os.getenv("GITHUB_REPOSITORY_OWNER", "j7x69")
 TOKEN = os.getenv("GITHUB_TOKEN", "")
-FEATURED_REPO = "PreservesPitchYT"  # Repo được ghim làm tâm điểm
 
-# ---------------------------------------------------------
-# GitHub Data Fetcher
-# ---------------------------------------------------------
+TOKENS = {
+    "bg_canvas": "#09090B",
+    "bg_card": "#0D0D10",
+    "bg_elevated": "#141419",
+    "bg_pill": "#16161C",
+    "border": "#27272A",
+    "border_subtle": "#1C1C21",
+    "text_primary": "#FAFAFA",
+    "text_secondary": "#A1A1AA",
+    "text_muted": "#71717A",
+    "accent_red": "#DC2626",
+    "accent_crimson": "#E11D48",
+    "accent_gold": "#F59E0B",
+    "accent_amber": "#FBBF24",
+    "accent_emerald": "#10B981",
+    "font_sans": "'SF Pro Display', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+    "font_mono": "'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace",
+}
+
+DEFAULT_METRICS = {
+    "total_stars": 4,
+    "total_downloads": 7,
+    "public_repos": 4,
+    "preserves_pitch": {
+        "stars": 1,
+        "downloads": 0,
+        "version": "MV3",
+    },
+    "recompress_bypass": {
+        "stars": 3,
+        "downloads": 7,
+        "version": "v1.2.5",
+    },
+}
+
+
 def fetch_api(url):
     req = urllib.request.Request(url)
-    req.add_header("Accept", "application/vnd.github.v3+json")
-    req.add_header("User-Agent", "GitHub-Profile-SVG-Generator-Jax")
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("User-Agent", f"GitHub-Profile-Bento-{USERNAME}")
     if TOKEN:
         req.add_header("Authorization", f"Bearer {TOKEN}")
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             return json.loads(resp.read().decode("utf-8"))
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return []
+    except Exception as exc:
+        print(f"[warn] API fetch skipped ({url}): {exc}")
+        return None
 
-def get_github_stats():
+
+def normalize_version(raw_tag, fallback="v1.2.5"):
+    if not raw_tag or not isinstance(raw_tag, str):
+        return fallback
+    tag = raw_tag.strip()
+    if not tag:
+        return fallback
+    if tag[0].isdigit():
+        return f"v{tag}"
+    return tag
+
+
+def sum_release_downloads(releases):
+    if not isinstance(releases, list):
+        return 0
+    total = 0
+    for rel in releases:
+        if not isinstance(rel, dict) or rel.get("draft"):
+            continue
+        for asset in rel.get("assets", []):
+            total += int(asset.get("download_count", 0))
+    return total
+
+
+def resolve_repo_version(owner, repo_name, releases=None, fallback="v1.2.5"):
+    latest = fetch_api(f"https://api.github.com/repos/{owner}/{repo_name}/releases/latest")
+    if isinstance(latest, dict) and latest.get("tag_name"):
+        return normalize_version(latest["tag_name"], fallback)
+
+    if isinstance(releases, list):
+        for rel in releases:
+            if isinstance(rel, dict) and not rel.get("draft") and rel.get("tag_name"):
+                return normalize_version(rel["tag_name"], fallback)
+
+    tags = fetch_api(f"https://api.github.com/repos/{owner}/{repo_name}/tags?per_page=10")
+    if isinstance(tags, list) and tags:
+        first_tag = tags[0].get("name") if isinstance(tags[0], dict) else None
+        if first_tag:
+            return normalize_version(first_tag, fallback)
+
+    return fallback
+
+
+def load_cached_metrics():
+    if os.path.exists(CACHE_PATH):
+        try:
+            with open(CACHE_PATH, "r", encoding="utf-8") as handle:
+                cached = json.load(handle)
+                if isinstance(cached, dict) and "recompress_bypass" in cached:
+                    return cached
+        except Exception:
+            pass
+    return json.loads(json.dumps(DEFAULT_METRICS))
+
+
+def save_cached_metrics(metrics):
+    try:
+        with open(CACHE_PATH, "w", encoding="utf-8") as handle:
+            json.dump(metrics, handle, indent=2)
+    except Exception as exc:
+        print(f"[warn] Could not write metrics cache: {exc}")
+
+
+def fetch_profile_metrics():
+    baseline = load_cached_metrics()
     repos = fetch_api(f"https://api.github.com/users/{USERNAME}/repos?per_page=100&type=owner")
-    
+    if not isinstance(repos, list):
+        print("[info] Using cached/baseline metrics (offline or API unavailable).")
+        return baseline
+
     total_stars = 0
-    total_forks = 0
     total_downloads = 0
     public_repos = 0
-    
-    featured_info = {
-        "name": FEATURED_REPO,
-        "desc": "Chrome extension unlocking custom audio pitch shifting on YouTube HTML5 videos.",
-        "stars": 0,
-        "forks": 0,
-        "downloads": 0
-    }
+    preserves_info = dict(baseline["preserves_pitch"])
+    recompress_info = dict(baseline["recompress_bypass"])
+    found_recompress = False
 
-    if not isinstance(repos, list):
-        return total_stars, total_forks, total_downloads, public_repos, featured_info
-
-    for r in repos:
-        if r.get("fork"):
+    for repo in repos:
+        if not isinstance(repo, dict) or repo.get("fork"):
             continue
         public_repos += 1
-        stars = r.get("stargazers_count", 0)
-        forks = r.get("forks_count", 0)
+        repo_name = repo.get("name", "")
+        stars = int(repo.get("stargazers_count", 0))
         total_stars += stars
-        total_forks += forks
 
-        repo_name = r.get("name", "")
-        # Lấy số lượt tải từ Releases của từng repo
-        releases = fetch_api(f"https://api.github.com/repos/{USERNAME}/{repo_name}/releases")
-        repo_dl = 0
-        if isinstance(releases, list):
-            for rel in releases:
-                for asset in rel.get("assets", []):
-                    repo_dl += asset.get("download_count", 0)
+        releases = fetch_api(f"https://api.github.com/repos/{USERNAME}/{repo_name}/releases?per_page=100")
+        repo_dl = sum_release_downloads(releases)
         total_downloads += repo_dl
 
-        if repo_name.lower() == FEATURED_REPO.lower():
-            featured_info["name"] = repo_name
-            featured_info["desc"] = r.get("description") or featured_info["desc"]
-            featured_info["stars"] = stars
-            featured_info["forks"] = forks
-            featured_info["downloads"] = repo_dl
+        lower_name = repo_name.lower()
+        if lower_name == "preservespitchyt":
+            preserves_info["stars"] = stars
+            preserves_info["downloads"] = repo_dl
+        elif lower_name in ("recompress-bypass", "recompressbypass"):
+            found_recompress = True
+            recompress_info["stars"] = stars
+            recompress_info["downloads"] = repo_dl
+            recompress_info["version"] = resolve_repo_version(
+                USERNAME,
+                repo_name,
+                releases=releases,
+                fallback=recompress_info.get("version", "v1.2.5"),
+            )
 
-    return total_stars, total_forks, total_downloads, public_repos, featured_info
+    if not found_recompress:
+        direct_repo = fetch_api(f"https://api.github.com/repos/{USERNAME}/Recompress-Bypass")
+        if isinstance(direct_repo, dict) and "stargazers_count" in direct_repo:
+            releases = fetch_api(f"https://api.github.com/repos/{USERNAME}/Recompress-Bypass/releases?per_page=100")
+            recompress_info["stars"] = int(direct_repo.get("stargazers_count", 0))
+            recompress_info["downloads"] = sum_release_downloads(releases)
+            recompress_info["version"] = resolve_repo_version(
+                USERNAME,
+                "Recompress-Bypass",
+                releases=releases,
+                fallback=recompress_info.get("version", "v1.2.5"),
+            )
 
-# ---------------------------------------------------------
-# Pixel Art Generator for 'JAX' (3D Extruded Vector Blocks)
-# ---------------------------------------------------------
-PIXEL_LETTERS = {
-    'J': [
-        '111111',
-        '000110',
-        '000110',
-        '000110',
-        '000110',
-        '110110',
-        '110110',
-        '011110'
-    ],
-    'A': [
-        '011110',
-        '110011',
-        '110011',
-        '111111',
-        '110011',
-        '110011',
-        '110011',
-        '110011'
-    ],
-    'X': [
-        '110011',
-        '110011',
-        '011110',
-        '001100',
-        '001100',
-        '011110',
-        '110011',
-        '110011'
-    ]
-}
+    metrics = {
+        "total_stars": total_stars,
+        "total_downloads": total_downloads,
+        "public_repos": public_repos,
+        "preserves_pitch": preserves_info,
+        "recompress_bypass": recompress_info,
+    }
+    save_cached_metrics(metrics)
+    return metrics
 
-def generate_pixel_jax(start_x, start_y, px_size=8, depth=5):
-    spacing = 16
-    elements = []
-    
-    # Layer 1: Khối bóng đổ đáy sâu 3D (Deep Bronze / Dark Amber)
-    curr_x = start_x
-    for char in ['J', 'A', 'X']:
-        matrix = PIXEL_LETTERS[char]
-        for r_idx, row in enumerate(matrix):
-            for c_idx, val in enumerate(row):
-                if val == '1':
-                    x = curr_x + c_idx * px_size + depth
-                    y = start_y + r_idx * px_size + depth
-                    elements.append(f'<rect x="{x}" y="{y}" width="{px_size}" height="{px_size}" fill="#422000" rx="1"/>')
-        curr_x += len(matrix[0]) * px_size + spacing
 
-    # Layer 2: Khối vát đồng 3D chuyển tiếp (#7A4600)
-    curr_x = start_x
-    for char in ['J', 'A', 'X']:
-        matrix = PIXEL_LETTERS[char]
-        for r_idx, row in enumerate(matrix):
-            for c_idx, val in enumerate(row):
-                if val == '1':
-                    x = curr_x + c_idx * px_size + int(depth * 0.5)
-                    y = start_y + r_idx * px_size + int(depth * 0.5)
-                    elements.append(f'<rect x="{x}" y="{y}" width="{px_size}" height="{px_size}" fill="#7a4600" rx="1"/>')
-        curr_x += len(matrix[0]) * px_size + spacing
-
-    # Layer 3: Viền vàng kim hoàng gia (#FFDD00)
-    curr_x = start_x
-    for char in ['J', 'A', 'X']:
-        matrix = PIXEL_LETTERS[char]
-        for r_idx, row in enumerate(matrix):
-            for c_idx, val in enumerate(row):
-                if val == '1':
-                    x = curr_x + c_idx * px_size
-                    y = start_y + r_idx * px_size
-                    elements.append(f'<rect x="{x}" y="{y}" width="{px_size}" height="{px_size}" fill="#ffdd00" rx="1.2"/>')
-        curr_x += len(matrix[0]) * px_size + spacing
-
-    # Layer 4: Mặt trước đỏ cờ Tổ Quốc (#DA251D)
-    curr_x = start_x
-    for char in ['J', 'A', 'X']:
-        matrix = PIXEL_LETTERS[char]
-        for r_idx, row in enumerate(matrix):
-            for c_idx, val in enumerate(row):
-                if val == '1':
-                    x = curr_x + c_idx * px_size + 1.2
-                    y = start_y + r_idx * px_size + 1.2
-                    elements.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{px_size-2.4:.1f}" height="{px_size-2.4:.1f}" fill="#da251d" rx="0.6"/>')
-        curr_x += len(matrix[0]) * px_size + spacing
-
-    # Layer 5: Điểm sáng lấp lánh góc trên (#FFF5A6)
-    curr_x = start_x
-    for char in ['J', 'A', 'X']:
-        matrix = PIXEL_LETTERS[char]
-        for r_idx, row in enumerate(matrix):
-            for c_idx, val in enumerate(row):
-                if val == '1':
-                    x = curr_x + c_idx * px_size + 1.5
-                    y = start_y + r_idx * px_size + 1.5
-                    elements.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="2" height="2" fill="#fff5a6" opacity="0.9"/>')
-        curr_x += len(matrix[0]) * px_size + spacing
-
-    return '\n    '.join(elements)
-
-# ---------------------------------------------------------
-# 3D Faceted Golden Star Generator (Ngôi sao vàng 5 cánh)
-# ---------------------------------------------------------
-def generate_star_facets(cx, cy, r_out):
-    r_in = r_out * 0.381966  # Tỉ lệ vàng chuẩn của ngôi sao 5 cánh
+def build_star_points(cx, cy, r_out, r_in=None):
+    if r_in is None:
+        r_in = r_out * 0.381966
     pts = []
     angle = -math.pi / 2
     step = math.pi / 5
-    for i in range(10):
-        r = r_out if i % 2 == 0 else r_in
-        pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+    for idx in range(10):
+        radius = r_out if idx % 2 == 0 else r_in
+        pts.append(f"{cx + radius * math.cos(angle):.2f},{cy + radius * math.sin(angle):.2f}")
         angle += step
+    return " ".join(pts)
 
-    elements = []
-    # 10 đa giác tam giác tạo hiệu ứng 3D khối vát ánh sáng
-    for i in range(10):
-        p1 = pts[i]
-        p2 = pts[(i + 1) % 10]
-        col = "#ffe55c" if i % 2 == 0 else "#d48800"
-        elements.append(f'<polygon points="{cx:.1f},{cy:.1f} {p1[0]:.1f},{p1[1]:.1f} {p2[0]:.1f},{p2[1]:.1f}" fill="{col}"/>')
 
-    # Viền chu vi vàng kim sắc nét
-    outer_pts_str = " ".join([f"{p[0]:.1f},{p[1]:.1f}" for p in pts])
-    elements.append(f'<polygon points="{outer_pts_str}" fill="none" stroke="#fff9d2" stroke-width="1.2" stroke-linejoin="round"/>')
+def write_svg(filename, content):
+    os.makedirs(ASSETS_DIR, exist_ok=True)
+    target = os.path.join(ASSETS_DIR, filename)
+    with open(target, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(content.strip() + "\n")
 
-    # Lõi ngọc phát quang trung tâm
-    elements.append(f'<circle cx="{cx}" cy="{cy}" r="3.5" fill="#fff9d2" opacity="0.9"/>')
-    elements.append(f'<circle cx="{cx}" cy="{cy}" r="1.5" fill="#ffffff"/>')
 
-    return '\n      '.join(elements)
+def generate_banner_svg(metrics):
+    t = TOKENS
+    vn_star = build_star_points(740.0, 18.5, 3.3)
+    total_dl = f"{metrics['total_downloads']:,}"
+    total_stars = f"{metrics['total_stars']:,}"
+    public_repos = f"{metrics['public_repos']:,}"
 
-# ---------------------------------------------------------
-# 1. Main Banner SVG (Vietnam Flag + Retro Cyberpunk Arcade)
-# ---------------------------------------------------------
-def generate_banner_svg(stars, repos):
-    star_cx, star_cy = 715, 90
-    star_r = 50
-    star_facets = generate_star_facets(star_cx, star_cy, star_r)
-    jax_pixel_blocks = generate_pixel_jax(40, 50, px_size=8, depth=5)
-
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="850" height="180" viewBox="0 0 850 180" fill="none">
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="850" height="186" viewBox="0 0 850 186" fill="none">
   <defs>
-    <!-- Background Gradient: Obsidian Crimson Đỏ thẫm -->
-    <linearGradient id="bgObsidian" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#120204"/>
-      <stop offset="50%" stop-color="#1f0508"/>
-      <stop offset="100%" stop-color="#2a070c"/>
-    </linearGradient>
-
-    <!-- Star Radiant Ambient Glow (Hào quang sao vàng) -->
-    <radialGradient id="starAmbient" cx="{star_cx}" cy="{star_cy}" r="160" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#ffdd00" stop-opacity="0.32"/>
-      <stop offset="35%" stop-color="#da251d" stop-opacity="0.22"/>
-      <stop offset="70%" stop-color="#da251d" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#120204" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Animated Border Laser Gradient -->
-    <linearGradient id="borderLaser" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ffdd00" stop-opacity="1"/>
-      <stop offset="50%" stop-color="#da251d" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#ffdd00" stop-opacity="1"/>
-    </linearGradient>
-
-    <!-- Scanline Sweep Gradient -->
-    <linearGradient id="scanlineGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffdd00" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#ffdd00" stop-opacity="0.08"/>
-      <stop offset="100%" stop-color="#ffdd00" stop-opacity="0"/>
-    </linearGradient>
-
-    <!-- Retro Cyber Grid Pattern -->
-    <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="0.85" fill="#da251d" fill-opacity="0.18"/>
+    <pattern id="dotMatrix" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="0.75" fill="{t['border']}" fill-opacity="0.45"/>
     </pattern>
-  </defs>
-
-  <style>
-    /* Animated Laser Border Ray - Viền chạy tia sáng */
-    .laser-border {{
-      stroke-dasharray: 140 1888;
-      stroke-dashoffset: 0;
-      animation: laserTravel 9s linear infinite;
-    }}
-    @keyframes laserTravel {{
-      from {{ stroke-dashoffset: 2028; }}
-      to {{ stroke-dashoffset: 0; }}
-    }}
-
-    /* Floating Bobbing Motion for 3D Pixel JAX */
-    .jax-group {{
-      animation: jaxBob 3.5s ease-in-out infinite;
-    }}
-    @keyframes jaxBob {{
-      0%, 100% {{ transform: translateY(0px); }}
-      50% {{ transform: translateY(-4px); }}
-    }}
-
-    /* Breathing Golden Star Animation - Sao vàng thở &amp; phát quang */
-    .star-pulse {{
-      transform-origin: {star_cx}px {star_cy}px;
-      animation: starBreath 3s ease-in-out infinite;
-    }}
-    @keyframes starBreath {{
-      0%, 100% {{
-        transform: scale(1);
-        filter: drop-shadow(0 0 10px rgba(255, 221, 0, 0.65)) drop-shadow(0 0 25px rgba(218, 37, 29, 0.45));
-      }}
-      50% {{
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 22px rgba(255, 221, 0, 0.95)) drop-shadow(0 0 45px rgba(218, 37, 29, 0.7));
-      }}
-    }}
-
-    /* Rotating Celestial Orbit Ring */
-    .spin-ring {{
-      transform-origin: {star_cx}px {star_cy}px;
-      animation: orbitSpin 25s linear infinite;
-    }}
-    @keyframes orbitSpin {{
-      from {{ transform: rotate(0deg); }}
-      to {{ transform: rotate(360deg); }}
-    }}
-
-    /* Sweeping CRT Scanline - Quét tia sáng mềm mại */
-    .scan-beam {{
-      animation: scanMove 4s linear infinite;
-    }}
-    @keyframes scanMove {{
-      0% {{ transform: translateY(-30px); }}
-      100% {{ transform: translateY(190px); }}
-    }}
-
-    /* Blinking Terminal Cursor - Nhấp nháy terminal */
-    .cursor-blink {{
-      animation: cursorPulse 1s step-start infinite;
-    }}
-    @keyframes cursorPulse {{
-      0%, 49% {{ opacity: 1; }}
-      50%, 100% {{ opacity: 0; }}
-    }}
-
-    /* Particle Twinkle - Bụi sao lấp lánh */
-    .twinkle-1 {{ animation: pTwinkle 2.5s ease-in-out infinite; }}
-    .twinkle-2 {{ animation: pTwinkle 3.2s ease-in-out infinite 0.8s; }}
-    .twinkle-3 {{ animation: pTwinkle 2.8s ease-in-out infinite 1.5s; }}
-    .twinkle-4 {{ animation: pTwinkle 3.6s ease-in-out infinite 2.1s; }}
-    @keyframes pTwinkle {{
-      0%, 100% {{ opacity: 0.25; transform: scale(0.85); }}
-      50% {{ opacity: 0.95; transform: scale(1.2); }}
-    }}
-  </style>
-
-  <!-- Base Card Background -->
-  <rect width="848" height="178" x="1" y="1" rx="14" fill="url(#bgObsidian)" stroke="#3d0e13" stroke-width="1.5"/>
-  
-  <!-- Subtle Grid Texture -->
-  <rect width="848" height="178" x="1" y="1" rx="14" fill="url(#grid)"/>
-
-  <!-- Star Radiant Ambient Halo -->
-  <circle cx="{star_cx}" cy="{star_cy}" r="150" fill="url(#starAmbient)"/>
-
-  <!-- CRT Scanline Light Beam -->
-  <g clip-path="url(#cardClip)">
-    <clipPath id="cardClip">
-      <rect width="848" height="178" x="1" y="1" rx="14"/>
+    <radialGradient id="subtleWarmth" cx="760" cy="30" r="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="{t['accent_crimson']}" stop-opacity="0.06"/>
+      <stop offset="55%" stop-color="{t['accent_gold']}" stop-opacity="0.025"/>
+      <stop offset="100%" stop-color="{t['bg_canvas']}" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="bannerClip">
+      <rect x="0.5" y="0.5" width="849" height="185" rx="12"/>
     </clipPath>
-    <rect x="1" y="0" width="848" height="30" fill="url(#scanlineGrad)" class="scan-beam" pointer-events="none"/>
-  </g>
-
-  <!-- Tactical HUD Corner Brackets in Imperial Gold -->
-  <g stroke="#ffdd00" stroke-width="1.8" opacity="0.85">
-    <path d="M 8 18 L 8 8 L 18 8"/>
-    <path d="M 840 18 L 840 8 L 830 8"/>
-    <path d="M 8 162 L 8 172 L 18 172"/>
-    <path d="M 840 162 L 840 172 L 830 172"/>
-  </g>
-
-  <!-- Animated Border Laser Ray -->
-  <rect width="848" height="178" x="1" y="1" rx="14" fill="none" stroke="url(#borderLaser)" stroke-width="2" class="laser-border"/>
-
-  <!-- Terminal HUD Tag Above JAX -->
-  <g>
-    <rect x="40" y="22" width="225" height="20" rx="3" fill="#200609" stroke="#7a1c24" stroke-width="1"/>
-    <circle cx="50" cy="32" r="3" fill="#da251d"/>
-    <text x="60" y="36" fill="#ffdd00" font-family="'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="10.5" font-weight="700" letter-spacing="1.2">
-      [ 🇻🇳 VN_DEV_HUD // JAX<tspan class="cursor-blink">_</tspan> ]
-    </text>
-  </g>
-
-  <!-- 3D Pixel Art Typography JAX with Floating Bobbing Motion -->
-  <g class="jax-group">
-    {jax_pixel_blocks}
-  </g>
-
-  <!-- Role Tagline -->
-  <text x="40" y="132" fill="#f0d5d7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600" letter-spacing="0.4">
-    <tspan fill="#ffdd00">SYSTEMS &amp; AUTOMATION</tspan>  <tspan fill="#7a1c24">·</tspan>  <tspan fill="#ffffff">MEDIA PIPELINES</tspan>  <tspan fill="#7a1c24">·</tspan>  <tspan fill="#ff6b6b">HARDWARE MODS</tspan>
-  </text>
-
-  <!-- Telemetry Row / Specs (Location 🇻🇳 VIETNAM) -->
-  <text x="40" y="157" fill="#c49b9e" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="11" letter-spacing="0.6">
-    <tspan fill="#ffdd00" font-weight="700">★ {stars:,} STARS</tspan>  <tspan fill="#7a1c24">│</tspan>  <tspan fill="#ffdd00" font-weight="700">📦 {repos} REPOS</tspan>  <tspan fill="#7a1c24">│</tspan>  <tspan fill="#ff6b6b">⚡ PYTHON / C# / ASM</tspan>  <tspan fill="#7a1c24">│</tspan>  <tspan fill="#ffd700">📍 🇻🇳 VIETNAM</tspan>
-  </text>
-
-  <!-- Celestial Orbit Rings around Golden Star -->
-  <g>
-    <circle cx="{star_cx}" cy="{star_cy}" r="74" fill="none" stroke="#ffdd00" stroke-width="1" stroke-dasharray="4 8" opacity="0.32" class="spin-ring"/>
-    <circle cx="{star_cx}" cy="{star_cy}" r="62" fill="none" stroke="#da251d" stroke-width="1.2" opacity="0.45"/>
-    <g stroke="#ffdd00" stroke-width="1.5" opacity="0.6">
-      <line x1="{star_cx}" y1="{star_cy - 78}" x2="{star_cx}" y2="{star_cy - 70}"/>
-      <line x1="{star_cx}" y1="{star_cy + 70}" x2="{star_cx}" y2="{star_cy + 78}"/>
-      <line x1="{star_cx - 78}" y1="{star_cy}" x2="{star_cx - 70}" y2="{star_cy}"/>
-      <line x1="{star_cx + 70}" y1="{star_cy}" x2="{star_cx + 78}" y2="{star_cy}"/>
-    </g>
-  </g>
-
-  <!-- Floating Twinkling Pixel Stars in the Cosmic Sky -->
-  <g fill="#ffdd00">
-    <g class="twinkle-1" transform="translate(615, 38)">
-      <polygon points="0,-4 1,-1 4,0 1,1 0,4 -1,1 -4,0 -1,-1" fill="#fff9d2"/>
-    </g>
-    <g class="twinkle-2" transform="translate(805, 42)">
-      <polygon points="0,-5 1.2,-1.2 5,0 1.2,1.2 0,5 -1.2,1.2 -5,0 -1.2,-1.2" fill="#ffdd00"/>
-    </g>
-    <g class="twinkle-3" transform="translate(635, 142)">
-      <polygon points="0,-3.5 1,-1 3.5,0 1,1 0,3.5 -1,1 -3.5,0 -1,-1" fill="#ffdd00"/>
-    </g>
-    <g class="twinkle-4" transform="translate(812, 138)">
-      <polygon points="0,-4 1,-1 4,0 1,1 0,4 -1,1 -4,0 -1,-1" fill="#fff9d2"/>
-    </g>
-  </g>
-
-  <!-- Majestic Faceted Golden Star (Vietnam Flag) with Breathing Animation -->
-  <g class="star-pulse">
-    {star_facets}
-  </g>
-</svg>'''
-    with open("assets/banner.svg", "w", encoding="utf-8") as f:
-        f.write(svg)
-
-# ---------------------------------------------------------
-# 2. Stats Cards SVG (4 Cards in Red & Imperial Gold Theme)
-# ---------------------------------------------------------
-def generate_stats_svg(stars, forks, downloads, repos):
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="850" height="115" viewBox="0 0 850 115" fill="none">
-  <defs>
-    <!-- Card Gradient -->
-    <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#140305"/>
-      <stop offset="50%" stop-color="#1d0508"/>
-      <stop offset="100%" stop-color="#26070b"/>
-    </linearGradient>
-
-    <!-- Glowing Accent Beams -->
-    <linearGradient id="goldBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#da251d"/>
-      <stop offset="50%" stop-color="#ffdd00"/>
-      <stop offset="100%" stop-color="#da251d"/>
-    </linearGradient>
-
-    <linearGradient id="amberBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#da251d"/>
-      <stop offset="50%" stop-color="#ffaa00"/>
-      <stop offset="100%" stop-color="#da251d"/>
-    </linearGradient>
-
-    <linearGradient id="greenBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#da251d"/>
-      <stop offset="50%" stop-color="#4ade80"/>
-      <stop offset="100%" stop-color="#da251d"/>
-    </linearGradient>
-
-    <linearGradient id="redBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ffdd00"/>
-      <stop offset="50%" stop-color="#da251d"/>
-      <stop offset="100%" stop-color="#ffdd00"/>
-    </linearGradient>
   </defs>
 
   <style>
-    .stat-card {{
-      fill: url(#cardBg);
-      stroke: #3d0e13;
-      stroke-width: 1.5;
+    .cursor-blink {{
+      animation: blink 1.1s step-end infinite;
     }}
-    .accent-beam {{
-      animation: beamPulse 3s ease-in-out infinite;
+    @keyframes blink {{
+      0%, 50% {{ opacity: 1; }}
+      51%, 100% {{ opacity: 0; }}
     }}
-    @keyframes beamPulse {{
-      0%, 100% {{ opacity: 0.75; }}
-      50% {{ opacity: 1; filter: drop-shadow(0 0 4px #ffdd00); }}
+    .status-pulse {{
+      animation: pulse 3s ease-in-out infinite;
     }}
-    .stat-num {{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 26px;
-      font-weight: 700;
-      text-anchor: middle;
-    }}
-    .stat-lbl {{
-      fill: #c49b9e;
-      font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      text-anchor: middle;
-    }}
-    .stat-tag {{
-      fill: #80222b;
-      font-family: 'JetBrains Mono', Menlo, monospace;
-      font-size: 8.5px;
-      font-weight: 600;
-      letter-spacing: 0.8px;
-    }}
-    .bracket {{
-      stroke: #ffdd00;
-      stroke-width: 1.2;
-      opacity: 0.65;
+    @keyframes pulse {{
+      0%, 100% {{ opacity: 0.35; }}
+      50% {{ opacity: 0.85; }}
     }}
   </style>
 
-  <!-- Card 1: TOTAL STARS -->
-  <g transform="translate(1, 5)">
-    <rect width="200" height="104" rx="10" class="stat-card"/>
-    <rect width="200" height="3" rx="1.5" fill="url(#goldBeam)" class="accent-beam"/>
-    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
-    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
-    <text x="14" y="24" class="stat-tag">// 01_STAR</text>
-    <text x="101" y="44" fill="#ffdd00" font-size="16" font-family="sans-serif" text-anchor="middle">★</text>
-    <text x="101" y="73" fill="#ffdd00" class="stat-num">{stars:,}</text>
-    <text x="101" y="93" class="stat-lbl">TOTAL STARS</text>
-  </g>
+  <g clip-path="url(#bannerClip)">
+    <rect x="0.5" y="0.5" width="849" height="185" rx="12" fill="{t['bg_canvas']}"/>
+    <rect x="37" y="37" width="519" height="148" fill="url(#dotMatrix)" opacity="0.65"/>
+    <rect x="0.5" y="0.5" width="849" height="185" fill="url(#subtleWarmth)"/>
 
-  <!-- Card 2: FORKS -->
-  <g transform="translate(217, 5)">
-    <rect width="200" height="104" rx="10" class="stat-card"/>
-    <rect width="200" height="3" rx="1.5" fill="url(#amberBeam)" class="accent-beam"/>
-    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
-    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
-    <text x="14" y="24" class="stat-tag">// 02_FORK</text>
-    <text x="101" y="44" fill="#ffaa00" font-size="16" font-family="sans-serif" text-anchor="middle">⑂</text>
-    <text x="101" y="73" fill="#ffaa00" class="stat-num">{forks:,}</text>
-    <text x="101" y="93" class="stat-lbl">TOTAL FORKS</text>
-  </g>
+    <!-- Top Terminal Bar -->
+    <rect x="0.5" y="0.5" width="849" height="36" fill="{t['bg_card']}"/>
+    <line x1="0.5" y1="36.5" x2="849.5" y2="36.5" stroke="{t['border_subtle']}" stroke-width="1"/>
 
-  <!-- Card 3: DOWNLOADS -->
-  <g transform="translate(433, 5)">
-    <rect width="200" height="104" rx="10" class="stat-card"/>
-    <rect width="200" height="3" rx="1.5" fill="url(#greenBeam)" class="accent-beam"/>
-    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
-    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
-    <text x="14" y="24" class="stat-tag">// 03_LOAD</text>
-    <text x="101" y="44" fill="#4ade80" font-size="16" font-family="sans-serif" text-anchor="middle">↓</text>
-    <text x="101" y="73" fill="#4ade80" class="stat-num">{downloads:,}</text>
-    <text x="101" y="93" class="stat-lbl">RELEASES DL</text>
-  </g>
+    <!-- Minimal Window Controls -->
+    <circle cx="22" cy="18.5" r="4" fill="{t['accent_red']}" opacity="0.85"/>
+    <circle cx="36" cy="18.5" r="4" fill="{t['border']}"/>
+    <circle cx="50" cy="18.5" r="4" fill="{t['border']}"/>
 
-  <!-- Card 4: PUBLIC REPOS -->
-  <g transform="translate(649, 5)">
-    <rect width="200" height="104" rx="10" class="stat-card"/>
-    <rect width="200" height="3" rx="1.5" fill="url(#redBeam)" class="accent-beam"/>
-    <path d="M 6 14 L 6 8 L 12 8" class="bracket"/>
-    <path d="M 194 14 L 194 8 L 188 8" class="bracket"/>
-    <text x="14" y="24" class="stat-tag">// 04_REPO</text>
-    <text x="101" y="44" fill="#ff4d4d" font-size="16" font-family="sans-serif" text-anchor="middle">▣</text>
-    <text x="101" y="73" fill="#ff4d4d" class="stat-num">{repos:,}</text>
-    <text x="101" y="93" class="stat-lbl">PUBLIC REPOS</text>
-  </g>
-</svg>'''
-    with open("assets/stats.svg", "w", encoding="utf-8") as f:
-        f.write(svg)
-
-# ---------------------------------------------------------
-# 3. Featured Repo SVG (Cyberpunk Card with Laser & Capsules)
-# ---------------------------------------------------------
-def generate_featured_svg(info):
-    raw_desc = info.get("desc") or ""
-    # Cắt gọn theo ranh giới từ để tránh gãy chữ
-    if len(raw_desc) > 75:
-        desc_trimmed = raw_desc[:75].rsplit(' ', 1)[0] + '...'
-    else:
-        desc_trimmed = raw_desc
-    desc = html.escape(desc_trimmed)
-    name = html.escape(str(info.get("name", "")))
-    stars = info.get("stars", 0)
-    forks = info.get("forks", 0)
-    downloads = info.get("downloads", 0)
-
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="850" height="115" viewBox="0 0 850 115" fill="none">
-  <defs>
-    <linearGradient id="featBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#140305"/>
-      <stop offset="50%" stop-color="#1f0508"/>
-      <stop offset="100%" stop-color="#2a070c"/>
-    </linearGradient>
-
-    <linearGradient id="featLaser" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ffdd00"/>
-      <stop offset="50%" stop-color="#da251d"/>
-      <stop offset="100%" stop-color="#ffdd00"/>
-    </linearGradient>
-  </defs>
-
-  <style>
-    .feat-border {{
-      stroke-dasharray: 100 1820;
-      animation: featTravel 8s linear infinite;
-    }}
-    @keyframes featTravel {{
-      from {{ stroke-dashoffset: 1920; }}
-      to {{ stroke-dashoffset: 0; }}
-    }}
-    .stat-box {{
-      fill: #190407;
-      stroke: #420f14;
-      stroke-width: 1;
-    }}
-    .corner-mark {{
-      stroke: #ffdd00;
-      stroke-width: 1.5;
-      opacity: 0.7;
-    }}
-  </style>
-
-  <!-- Card Background -->
-  <rect width="848" height="113" x="1" y="1" rx="12" fill="url(#featBg)" stroke="#3d0e13" stroke-width="1.5"/>
-
-  <!-- Tactical Corners -->
-  <path d="M 8 16 L 8 8 L 16 8" class="corner-mark"/>
-  <path d="M 840 16 L 840 8 L 832 8" class="corner-mark"/>
-  <path d="M 8 98 L 8 106 L 16 106" class="corner-mark"/>
-  <path d="M 840 98 L 840 106 L 832 106" class="corner-mark"/>
-
-  <!-- Left Accent Dual Stripe: Flag Red + Imperial Gold -->
-  <rect x="1" y="1" width="4" height="113" rx="2" fill="#da251d"/>
-  <rect x="5" y="1" width="2.5" height="113" rx="1" fill="#ffdd00"/>
-
-  <!-- Animated Laser Ray -->
-  <rect width="848" height="113" x="1" y="1" rx="12" fill="none" stroke="url(#featLaser)" stroke-width="1.8" class="feat-border"/>
-
-  <!-- Header Badge -->
-  <g>
-    <rect x="30" y="16" width="220" height="18" rx="3" fill="#200609" stroke="#7a1c24" stroke-width="1"/>
-    <circle cx="40" cy="25" r="2.5" fill="#da251d"/>
-    <text x="49" y="28.5" fill="#ffdd00" font-family="'JetBrains Mono', Menlo, Consolas, monospace" font-size="9.5" font-weight="700" letter-spacing="1.2">
-      [ 🇻🇳 FEATURED_SYSTEM // CORE_BUILD ]
+    <!-- Terminal Path -->
+    <text x="68" y="22.5" font-family="{t['font_mono']}" font-size="11.5">
+      <tspan fill="{t['text_primary']}" font-weight="600">~/j7x69</tspan>
+      <tspan fill="{t['text_muted']}"> — systems &amp; media engineering</tspan><tspan fill="{t['accent_gold']}" font-weight="700" class="cursor-blink">_</tspan>
     </text>
+
+    <!-- Geometric Vietnam + Timezone Pill -->
+    <rect x="724" y="8.5" width="108" height="20" rx="10" fill="{t['bg_elevated']}" stroke="{t['border']}" stroke-width="1"/>
+    <rect x="733" y="13.5" width="14" height="10" rx="1.8" fill="{t['accent_red']}"/>
+    <polygon points="{vn_star}" fill="{t['accent_amber']}"/>
+    <text x="754" y="22" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="10" font-weight="600" letter-spacing="0.4">VN · UTC+7</text>
+
+    <!-- Bento Structural Dividers -->
+    <line x1="556.5" y1="36.5" x2="556.5" y2="185.5" stroke="{t['border_subtle']}" stroke-width="1"/>
+    <line x1="556.5" y1="94.5" x2="849.5" y2="94.5" stroke="{t['border_subtle']}" stroke-width="1"/>
+    <line x1="654.5" y1="94.5" x2="654.5" y2="185.5" stroke="{t['border_subtle']}" stroke-width="1"/>
+    <line x1="752.5" y1="94.5" x2="752.5" y2="185.5" stroke="{t['border_subtle']}" stroke-width="1"/>
+
+    <!-- Left Hero Column -->
+    <text x="28" y="63" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="10" font-weight="600" letter-spacing="1.2">SOFTWARE ENGINEER  //  CLIENT &amp; MEDIA SYSTEMS</text>
+
+    <text x="28" y="102" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="34" font-weight="700" letter-spacing="-0.8">Jax</text>
+    <text x="92" y="100" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="13.5" font-weight="500">@j7x69</text>
+
+    <text x="28" y="132" fill="{t['text_secondary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="400">Building zero-bloat media tooling, binary container pipelines,</text>
+    <text x="28" y="153" fill="{t['text_secondary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="400">browser runtime extensions, and native client utilities.</text>
+
+    <!-- Right Bento Top: Active Shipping Status -->
+    <circle cx="579" cy="60" r="6.5" fill="{t['accent_emerald']}" class="status-pulse"/>
+    <circle cx="579" cy="60" r="3" fill="{t['accent_emerald']}"/>
+    <text x="593" y="63.5" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="600" letter-spacing="0.7">ACTIVE DISTRIBUTION</text>
+    <text x="593" y="80" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="10.5">Chrome Web Store · Android APK</text>
+
+    <!-- Right Bento Bottom: 3 Clean Telemetry Cells -->
+    <text x="605.5" y="138" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="20" font-weight="700" text-anchor="middle">{total_dl}</text>
+    <text x="605.5" y="160" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="0.8" text-anchor="middle">DOWNLOADS</text>
+
+    <text x="703.5" y="138" fill="{t['accent_amber']}" font-family="{t['font_mono']}" font-size="20" font-weight="700" text-anchor="middle">{total_stars}</text>
+    <text x="703.5" y="160" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="0.8" text-anchor="middle">STARS</text>
+
+    <text x="801" y="138" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="20" font-weight="700" text-anchor="middle">{public_repos}</text>
+    <text x="801" y="160" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="0.8" text-anchor="middle">REPOS</text>
   </g>
 
-  <!-- Repo Title -->
-  <text x="30" y="58" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="700">
-    {name}
-  </text>
+  <rect x="0.5" y="0.5" width="849" height="185" rx="12" stroke="{t['border']}" stroke-width="1"/>
+</svg>"""
+    write_svg("banner.svg", svg)
 
-  <!-- Description -->
-  <text x="30" y="85" fill="#c49b9e" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12.5" font-weight="400">
-    {desc}
-  </text>
 
-  <!-- Right Side Stat Capsules -->
-  <!-- Capsule 1: Stars -->
-  <g transform="translate(595, 26)">
-    <rect width="72" height="62" rx="8" class="stat-box"/>
-    <rect width="72" height="2" rx="1" fill="#ffdd00"/>
-    <text x="36" y="22" fill="#ffdd00" font-size="12" font-family="sans-serif" text-anchor="middle">★</text>
-    <text x="36" y="42" fill="#ffdd00" font-family="-apple-system, sans-serif" font-size="17" font-weight="700" text-anchor="middle">{stars:,}</text>
-    <text x="36" y="55" fill="#c49b9e" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" text-anchor="middle">STARS</text>
+def generate_preservespitch_card(info):
+    t = TOKENS
+    stars_str = f"{int(info.get('stars', 0)):,}"
+    star_poly = build_star_points(312.0, 154.5, 5.2)
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="418" height="176" viewBox="0 0 418 176" fill="none">
+  <rect x="0.5" y="0.5" width="417" height="175" rx="10" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
+
+  <!-- Custom Audio Pitch Waveform Icon Box -->
+  <rect x="20" y="18" width="32" height="32" rx="7" fill="{t['bg_elevated']}" stroke="{t['border']}" stroke-width="1"/>
+  <g stroke="{t['accent_amber']}" stroke-width="1.7" stroke-linecap="round">
+    <line x1="28" y1="37" x2="28" y2="31"/>
+    <line x1="32" y1="40" x2="32" y2="28"/>
+    <line x1="36" y1="42" x2="36" y2="26"/>
+    <line x1="40" y1="38" x2="40" y2="30"/>
+    <line x1="44" y1="36" x2="44" y2="32"/>
   </g>
 
-  <!-- Capsule 2: Forks -->
-  <g transform="translate(675, 26)">
-    <rect width="72" height="62" rx="8" class="stat-box"/>
-    <rect width="72" height="2" rx="1" fill="#ffaa00"/>
-    <text x="36" y="22" fill="#ffaa00" font-size="12" font-family="sans-serif" text-anchor="middle">⑂</text>
-    <text x="36" y="42" fill="#ffaa00" font-family="-apple-system, sans-serif" font-size="17" font-weight="700" text-anchor="middle">{forks:,}</text>
-    <text x="36" y="55" fill="#c49b9e" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" text-anchor="middle">FORKS</text>
-  </g>
+  <!-- Status Pill -->
+  <rect x="252" y="23" width="146" height="22" rx="11" fill="#0D1F17" stroke="#183D2C" stroke-width="1"/>
+  <circle cx="265" cy="34" r="3" fill="{t['accent_emerald']}"/>
+  <text x="274" y="37.5" fill="#34D399" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="0.4">CHROME STORE · LIVE</text>
 
-  <!-- Capsule 3: Downloads -->
-  <g transform="translate(755, 26)">
-    <rect width="72" height="62" rx="8" class="stat-box"/>
-    <rect width="72" height="2" rx="1" fill="#4ade80"/>
-    <text x="36" y="22" fill="#4ade80" font-size="12" font-family="sans-serif" text-anchor="middle">↓</text>
-    <text x="36" y="42" fill="#4ade80" font-family="-apple-system, sans-serif" font-size="17" font-weight="700" text-anchor="middle">{downloads:,}</text>
-    <text x="36" y="55" fill="#c49b9e" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" text-anchor="middle">RELEASES</text>
-  </g>
-</svg>'''
-    with open("assets/featured.svg", "w", encoding="utf-8") as f:
-        f.write(svg)
+  <!-- Title & External Arrow -->
+  <text x="20" y="76" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="18" font-weight="700" letter-spacing="-0.3">PreservesPitchYT</text>
+  <path d="M 388 72 L 396 64 M 390 64 L 396 64 L 396 70" stroke="{t['text_muted']}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 
-# ---------------------------------------------------------
-# Entrypoint Execution
-# ---------------------------------------------------------
+  <!-- Technical Summary -->
+  <text x="20" y="100" fill="{t['text_secondary']}" font-family="{t['font_sans']}" font-size="12.5">Manifest V3 extension unlocking proportional analog pitch</text>
+  <text x="20" y="119" fill="{t['text_secondary']}" font-family="{t['font_sans']}" font-size="12.5">shifting (preservesPitch = false) on YouTube HTML5 video.</text>
+
+  <!-- Bottom Metadata Bar -->
+  <line x1="1" y1="138.5" x2="417" y2="138.5" stroke="{t['border_subtle']}" stroke-width="1"/>
+  <circle cx="25" cy="155" r="4" fill="#F7DF1E"/>
+  <text x="35" y="159" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">JavaScript · Manifest V3</text>
+
+  <!-- Right Stats -->
+  <polygon points="{star_poly}" fill="{t['accent_amber']}"/>
+  <text x="321" y="159" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="11" font-weight="600">{stars_str}</text>
+  <line x1="335" y1="149.5" x2="335" y2="160.5" stroke="{t['border']}" stroke-width="1"/>
+  <text x="398" y="159" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="10.5" text-anchor="end">Web Store</text>
+</svg>"""
+    write_svg("project_preservespitch.svg", svg)
+
+
+def generate_recompress_card(info):
+    t = TOKENS
+    version = html.escape(normalize_version(info.get("version"), "v1.2.5"))
+    stars_str = f"{int(info.get('stars', 0)):,}"
+    dl_str = f"{int(info.get('downloads', 0)):,}"
+
+    pill_label = f"ANDROID · {version}"
+    pill_width = max(118, int(len(pill_label) * 6.45 + 26))
+    pill_x = 398 - pill_width
+
+    # Right-aligned bottom telemetry coordinates (Stars | Cumulative Downloads)
+    dl_text_label = f"{dl_str} DL"
+    dl_text_x = 398
+    dl_icon_x = dl_text_x - (len(dl_text_label) * 6.65) - 14
+    sep_x = dl_icon_x - 9
+    star_text_x = sep_x - 9
+    star_icon_cx = star_text_x - (len(stars_str) * 6.65) - 8
+    star_poly = build_star_points(star_icon_cx, 154.5, 5.2)
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="418" height="176" viewBox="0 0 418 176" fill="none">
+  <rect x="0.5" y="0.5" width="417" height="175" rx="10" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
+
+  <!-- Custom Binary Container Muxing Icon Box -->
+  <rect x="20" y="18" width="32" height="32" rx="7" fill="{t['bg_elevated']}" stroke="{t['border']}" stroke-width="1"/>
+  <rect x="27" y="25" width="18" height="18" rx="3" stroke="{t['accent_crimson']}" stroke-width="1.6"/>
+  <path d="M 33 31 L 39 34 L 33 37 Z" fill="{t['text_primary']}"/>
+
+  <!-- Dynamic Version Badge (Release / Git Tag) -->
+  <rect x="{pill_x}" y="23" width="{pill_width}" height="22" rx="11" fill="#21160A" stroke="#422B11" stroke-width="1"/>
+  <circle cx="{pill_x + 12}" cy="34" r="3" fill="{t['accent_amber']}"/>
+  <text x="{pill_x + 21}" y="37.5" fill="{t['accent_amber']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="0.4">{pill_label}</text>
+
+  <!-- Title & External Arrow -->
+  <text x="20" y="76" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="18" font-weight="700" letter-spacing="-0.3">Recompress-Bypass</text>
+  <path d="M 388 72 L 396 64 M 390 64 L 396 64 L 396 70" stroke="{t['text_muted']}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Technical Summary -->
+  <text x="20" y="100" fill="{t['text_secondary']}" font-family="{t['font_sans']}" font-size="12.5">Native Android container conditioner remuxing MP4 streams</text>
+  <text x="20" y="119" fill="{t['text_secondary']}" font-family="{t['font_sans']}" font-size="12.5">at the binary layer to preserve 2K/4K 60FPS visual fidelity.</text>
+
+  <!-- Bottom Metadata Bar: Language + Live Stars + Cumulative Release Downloads -->
+  <line x1="1" y1="138.5" x2="417" y2="138.5" stroke="{t['border_subtle']}" stroke-width="1"/>
+  <circle cx="25" cy="155" r="4" fill="#A97BFF"/>
+  <text x="35" y="159" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">Kotlin · Compose</text>
+
+  <!-- Stars -->
+  <polygon points="{star_poly}" fill="{t['accent_amber']}"/>
+  <text x="{star_text_x:.1f}" y="159" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="11" font-weight="600" text-anchor="end">{stars_str}</text>
+  <line x1="{sep_x:.1f}" y1="149.5" x2="{sep_x:.1f}" y2="160.5" stroke="{t['border']}" stroke-width="1"/>
+
+  <!-- Cumulative Downloads -->
+  <g transform="translate({dl_icon_x:.1f}, 149)" stroke="{t['accent_emerald']}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 5 1.5 L 5 8.5 M 2.2 6 L 5 8.8 L 7.8 6"/>
+    <line x1="1.5" y1="11" x2="8.5" y2="11"/>
+  </g>
+  <text x="{dl_text_x}" y="159" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="11" font-weight="600" text-anchor="end">{dl_text_label}</text>
+</svg>"""
+    write_svg("project_recompress.svg", svg)
+
+
+def generate_stack_svg():
+    t = TOKENS
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="850" height="96" viewBox="0 0 850 96" fill="none">
+  <rect x="0.5" y="0.5" width="849" height="95" rx="10" fill="{t['bg_canvas']}" stroke="{t['border']}" stroke-width="1"/>
+
+  <line x1="283.5" y1="1" x2="283.5" y2="95" stroke="{t['border_subtle']}" stroke-width="1"/>
+  <line x1="566.5" y1="1" x2="566.5" y2="95" stroke="{t['border_subtle']}" stroke-width="1"/>
+
+  <!-- Domain 01 -->
+  <text x="22" y="27" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="1">01 // LANGUAGES</text>
+  <text x="22" y="53" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="600">Kotlin · JavaScript · C#</text>
+  <text x="22" y="74" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="11">C++ · Python · PowerShell</text>
+
+  <!-- Domain 02 -->
+  <text x="305" y="27" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="1">02 // MEDIA &amp; RUNTIME</text>
+  <text x="305" y="53" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="600">MP4 Binary Muxing · FFmpeg</text>
+  <text x="305" y="74" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="11">HTML5 Web Audio · Manifest V3</text>
+
+  <!-- Domain 03 -->
+  <text x="588" y="27" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="1">03 // PLATFORMS &amp; INFRA</text>
+  <text x="588" y="53" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="600">Android (Jetpack Compose)</text>
+  <text x="588" y="74" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="11">Win32 Native · Linux · GitHub CI</text>
+</svg>"""
+    write_svg("stack.svg", svg)
+
+
+def generate_action_badges(recompress_version):
+    t = TOKENS
+    ver = html.escape(normalize_version(recompress_version, "v1.2.5"))
+
+    def calc_pill_width(prefix, strong=""):
+        return int(28 + (len(prefix) + len(strong)) * 6.45 + 14)
+
+    # 1. Chrome Web Store Badge
+    s_prefix, s_strong = "Chrome Store · ", "PreservesPitchYT"
+    s_width = calc_pill_width(s_prefix, s_strong)
+    store_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{s_width}" height="30" viewBox="0 0 {s_width} 30" fill="none">
+  <rect x="0.5" y="0.5" width="{s_width - 1}" height="29" rx="6" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
+  <circle cx="16" cy="15" r="5" stroke="{t['accent_emerald']}" stroke-width="1.5"/>
+  <circle cx="16" cy="15" r="1.8" fill="{t['accent_emerald']}"/>
+  <text x="28" y="19" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">{s_prefix}<tspan fill="{t['text_primary']}" font-weight="600">{s_strong}</tspan></text>
+</svg>"""
+    write_svg("badge_store.svg", store_svg)
+
+    # 2. Recompress-Bypass APK Release Badge (with dynamic tag version)
+    apk_label_prefix = "Android APK · "
+    apk_label_strong = f"Recompress {ver}"
+    apk_width = calc_pill_width(apk_label_prefix, apk_label_strong)
+    apk_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{apk_width}" height="30" viewBox="0 0 {apk_width} 30" fill="none">
+  <rect x="0.5" y="0.5" width="{apk_width - 1}" height="29" rx="6" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
+  <g transform="translate(11, 9)" stroke="{t['accent_amber']}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 5 1 L 5 8 M 2.3 5.5 L 5 8.3 L 7.7 5.5"/>
+    <line x1="1.5" y1="11" x2="8.5" y2="11"/>
+  </g>
+  <text x="28" y="19" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">{apk_label_prefix}<tspan fill="{t['text_primary']}" font-weight="600">{apk_label_strong}</tspan></text>
+</svg>"""
+    write_svg("badge_apk.svg", apk_svg)
+
+    # 3. Email Contact Badge
+    m_text = "jaxk5g999@gmail.com"
+    m_width = int(30 + len(m_text) * 6.45 + 14)
+    mail_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{m_width}" height="30" viewBox="0 0 {m_width} 30" fill="none">
+  <rect x="0.5" y="0.5" width="{m_width - 1}" height="29" rx="6" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
+  <rect x="11" y="10.5" width="12" height="9" rx="1.5" stroke="{t['text_secondary']}" stroke-width="1.4"/>
+  <path d="M 11.5 11.5 L 17 15.5 L 22.5 11.5" stroke="{t['text_secondary']}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="30" y="19" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">{m_text}</text>
+</svg>"""
+    write_svg("badge_mail.svg", mail_svg)
+
+
+def ensure_snake_placeholder():
+    snake_path = os.path.join(ASSETS_DIR, "snake.svg")
+    if os.path.exists(snake_path):
+        with open(snake_path, "r", encoding="utf-8") as handle:
+            existing = handle.read()
+        # Preserve real Platane/snk output if already generated by GitHub Actions
+        if "Contribution animation generating" not in existing and len(existing) > 1500:
+            return
+
+    t = TOKENS
+    cells = []
+    palette = ["#131317", "#18181E", "#3F131D", "#881337", "#E11D48", "#F59E0B"]
+    for col in range(52):
+        for row in range(7):
+            seed = (col * 17 + row * 31) % 29
+            if seed == 0:
+                fill = palette[5]
+            elif seed < 3:
+                fill = palette[4]
+            elif seed < 6:
+                fill = palette[3]
+            elif seed < 10:
+                fill = palette[2]
+            elif seed < 16:
+                fill = palette[1]
+            else:
+                fill = palette[0]
+            x = 23 + col * 15.5
+            y = 32 + row * 13.5
+            cells.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="10.5" height="10.5" rx="2" fill="{fill}"/>')
+
+    grid_markup = "\n    ".join(cells)
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="850" height="142" viewBox="0 0 850 142" fill="none">
+  <rect x="0.5" y="0.5" width="849" height="141" rx="10" fill="{t['bg_canvas']}" stroke="{t['border']}" stroke-width="1"/>
+  <text x="23" y="21" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="1">04 // CONTRIBUTION ACTIVITY</text>
+  <text x="827" y="21" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" text-anchor="end">SYNCED VIA GITHUB ACTIONS</text>
+  <g>
+    {grid_markup}
+  </g>
+</svg>"""
+    write_svg("snake.svg", svg)
+
+
+def build_all(metrics=None):
+    active_metrics = metrics if metrics is not None else fetch_profile_metrics()
+    generate_banner_svg(active_metrics)
+    generate_preservespitch_card(active_metrics["preserves_pitch"])
+    generate_recompress_card(active_metrics["recompress_bypass"])
+    generate_stack_svg()
+    generate_action_badges(active_metrics["recompress_bypass"].get("version", "v1.2.5"))
+    ensure_snake_placeholder()
+    return active_metrics
+
+
 if __name__ == "__main__":
-    os.makedirs("assets", exist_ok=True)
-    print("Fetching GitHub metrics for user:", USERNAME)
-    stars, forks, downloads, repos, featured = get_github_stats()
-    print(f"Stats fetched: Stars={stars}, Forks={forks}, Downloads={downloads}, Repos={repos}")
-    
-    generate_banner_svg(stars, repos)
-    generate_stats_svg(stars, forks, downloads, repos)
-    generate_featured_svg(featured)
-    print("Successfully generated all Vietnam Flag + Retro Cyberpunk SVG assets!")
+    os.chdir(BASE_DIR)
+    resolved = build_all()
+    print(
+        "Generated Minimalist Bento SVGs -> "
+        f"Stars={resolved['total_stars']}, "
+        f"Downloads={resolved['total_downloads']}, "
+        f"Repos={resolved['public_repos']}, "
+        f"Recompress={resolved['recompress_bypass']}"
+    )

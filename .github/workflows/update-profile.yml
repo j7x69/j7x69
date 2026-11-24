@@ -2,8 +2,8 @@ name: Update Profile README & SVGs
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Chạy định kỳ mỗi 6 tiếng
-  workflow_dispatch:      # Cho phép bấm nút chạy thủ công bất cứ lúc nào
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -23,23 +23,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Generate Custom Stats SVGs
+      - name: Generate Minimalist Bento SVGs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
         run: python generate_svg.py
 
-      - name: Generate Contribution Snake SVG (Dark Mode)
+      - name: Generate Contribution Snake SVG (Obsidian Crimson/Amber Palette)
         uses: Platane/snk/svg-only@v3
         with:
           github_user_name: ${{ github.repository_owner }}
           outputs: |
-            assets/snake.svg?palette=github-dark
+            assets/snake.svg?color_snake=#f59e0b&color_dots=#131317,#3f131d,#881337,#be123c,#e11d48
 
       - name: Commit and Push updated SVGs
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/*.svg
-          git diff --staged --quiet || git commit -m "chore: regenerate profile SVGs [skip ci]"
+          git diff --staged --quiet || git commit -m "chore: sync profile telemetry SVGs [skip ci]"
           git push

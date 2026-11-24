@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="166" height="30" viewBox="0 0 166 30" fill="none">
+  <rect x="0.5" y="0.5" width="165" height="29" rx="6" fill="#0D0D10" stroke="#27272A" stroke-width="1"/>
+  <rect x="11" y="10.5" width="12" height="9" rx="1.5" stroke="#A1A1AA" stroke-width="1.4"/>
+  <path d="M 11.5 11.5 L 17 15.5 L 22.5 11.5" stroke="#A1A1AA" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="30" y="19" fill="#FAFAFA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="10.5" font-weight="500">jaxk5g999@gmail.com</text>
+</svg>
