@@ -9,7 +9,7 @@
   <a href="https://github.com/j7x69/Recompress-Bypass/releases/latest">
     <img src="./assets/badge_apk.svg" alt="Latest Android APK — Recompress-Bypass" />
   </a>&nbsp;
-  <a href="mailto:jaxk5g999@gmail.com">
+  <a href="mailto🍞">
     <img src="./assets/badge_mail.svg" alt="Email — jaxk5g999@gmail.com" />
   </a>
 </div>
