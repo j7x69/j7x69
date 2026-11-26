@@ -9,8 +9,8 @@
   <a href="https://github.com/j7x69/Recompress-Bypass/releases/latest">
     <img src="./assets/badge_apk.svg" alt="Latest Android APK — Recompress-Bypass" />
   </a>&nbsp;
-  <a href="mailto🍞">
-    <img src="./assets/badge_mail.svg" alt="Email — jaxk5g999@gmail.com" />
+  <a href="https://discord.gg/JQwn7KJnV">
+    <img src="./assets/badge_discord.svg" alt="Discord — Join Server" />
   </a>
 </div>
 

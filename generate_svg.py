@@ -426,8 +426,8 @@ def generate_stack_svg():
 
   <!-- Domain 01 -->
   <text x="22" y="27" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="1">01 // LANGUAGES</text>
-  <text x="22" y="53" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="600">Kotlin · JavaScript · C#</text>
-  <text x="22" y="74" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="11">C++ · Python · PowerShell</text>
+  <text x="22" y="53" fill="{t['text_primary']}" font-family="{t['font_sans']}" font-size="13.5" font-weight="600">Rust · Kotlin · C++ · C#</text>
+  <text x="22" y="74" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="11">JavaScript · Python · PowerShell</text>
 
   <!-- Domain 02 -->
   <text x="305" y="27" fill="{t['text_muted']}" font-family="{t['font_mono']}" font-size="9.5" font-weight="600" letter-spacing="1">02 // MEDIA &amp; RUNTIME</text>
@@ -474,16 +474,17 @@ def generate_action_badges(recompress_version):
 </svg>"""
     write_svg("badge_apk.svg", apk_svg)
 
-    # 3. Email Contact Badge
-    m_text = "jaxk5g999@gmail.com"
-    m_width = int(30 + len(m_text) * 6.45 + 14)
-    mail_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{m_width}" height="30" viewBox="0 0 {m_width} 30" fill="none">
-  <rect x="0.5" y="0.5" width="{m_width - 1}" height="29" rx="6" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
-  <rect x="11" y="10.5" width="12" height="9" rx="1.5" stroke="{t['text_secondary']}" stroke-width="1.4"/>
-  <path d="M 11.5 11.5 L 17 15.5 L 22.5 11.5" stroke="{t['text_secondary']}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="30" y="19" fill="{t['text_primary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">{m_text}</text>
+    # 3. Discord Server Badge
+    d_prefix, d_strong = "Discord · ", "Join Server"
+    d_width = calc_pill_width(d_prefix, d_strong)
+    discord_svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{d_width}" height="30" viewBox="0 0 {d_width} 30" fill="none">
+  <rect x="0.5" y="0.5" width="{d_width - 1}" height="29" rx="6" fill="{t['bg_card']}" stroke="{t['border']}" stroke-width="1"/>
+  <path d="M 12.2 11.2 C 13.5 10.6 14.8 10.4 16 10.4 C 17.2 10.4 18.5 10.6 19.8 11.2 C 20.8 13.3 21.1 15.6 20.8 17.9 C 19.7 18.8 18.5 19.3 17.3 19.6 L 16.7 18.5 C 16.2 18.6 15.8 18.6 15.3 18.5 L 14.7 19.6 C 13.5 19.3 12.3 18.8 11.2 17.9 C 10.9 15.6 11.2 13.3 12.2 11.2 Z" stroke="#818CF8" stroke-width="1.35" stroke-linejoin="round"/>
+  <circle cx="14.4" cy="14.8" r="1" fill="#818CF8"/>
+  <circle cx="17.6" cy="14.8" r="1" fill="#818CF8"/>
+  <text x="28" y="19" fill="{t['text_secondary']}" font-family="{t['font_mono']}" font-size="10.5" font-weight="500">{d_prefix}<tspan fill="{t['text_primary']}" font-weight="600">{d_strong}</tspan></text>
 </svg>"""
-    write_svg("badge_mail.svg", mail_svg)
+    write_svg("badge_discord.svg", discord_svg)
 
 
 def ensure_snake_placeholder():
