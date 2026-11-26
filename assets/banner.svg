@@ -78,7 +78,7 @@
     <text x="593" y="80" fill="#71717A" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="10.5">Chrome Web Store · Android APK</text>
 
     <!-- Right Bento Bottom: 3 Clean Telemetry Cells -->
-    <text x="605.5" y="138" fill="#FAFAFA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="20" font-weight="700" text-anchor="middle">55</text>
+    <text x="605.5" y="138" fill="#FAFAFA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="20" font-weight="700" text-anchor="middle">57</text>
     <text x="605.5" y="160" fill="#71717A" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="9.5" font-weight="600" letter-spacing="0.8" text-anchor="middle">DOWNLOADS</text>
 
     <text x="703.5" y="138" fill="#FBBF24" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="20" font-weight="700" text-anchor="middle">4</text>
