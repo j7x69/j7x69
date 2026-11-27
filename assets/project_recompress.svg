@@ -34,5 +34,5 @@
     <path d="M 5 1.5 L 5 8.5 M 2.2 6 L 5 8.8 L 7.8 6"/>
     <line x1="1.5" y1="11" x2="8.5" y2="11"/>
   </g>
-  <text x="398" y="159" fill="#FAFAFA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" text-anchor="end">55 DL</text>
+  <text x="398" y="159" fill="#FAFAFA" font-family="'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="11" font-weight="600" text-anchor="end">56 DL</text>
 </svg>
